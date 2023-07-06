@@ -265,5 +265,9 @@ int stm32_dac_setup(void);
 int stm32_dfsdm_setup(void);
 #endif
 
+#if defined(CONFIG_DEV_GPIO)
+int stm32l4_gpio_initialize(void);
+#endif
+
 #endif /* __ASSEMBLY__ */
 #endif /* __BOARDS_ARM_STM32L4_NUCLEO_L496ZG_SRC_NUCLEO_144_H */

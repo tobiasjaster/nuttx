@@ -84,6 +84,7 @@ int board_app_initialize(uintptr_t arg)
 {
   int ret;
 
+  syslog(LOG_INFO, "App_initialize.\n");
 #ifdef CONFIG_FS_PROCFS
   /* Mount the procfs file system */
 
@@ -92,6 +93,15 @@ int board_app_initialize(uintptr_t arg)
     {
       syslog(LOG_ERR, "ERROR: Failed to mount procfs at %s: %d\n",
              STM32_PROCFS_MOUNTPOINT, ret);
+    }
+#endif
+
+#ifdef CONFIG_DEV_GPIO
+  ret = stm32l4_gpio_initialize();
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "Failed to initialize GPIO Driver: %d\n", ret);
+      return ret;
     }
 #endif
 

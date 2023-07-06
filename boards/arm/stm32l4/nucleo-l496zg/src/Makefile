@@ -59,4 +59,8 @@ ifeq ($(CONFIG_STM32L4_OTGFS),y)
 CSRCS += stm32_usb.c
 endif
 
+ifeq ($(CONFIG_DEV_GPIO),y)
+CSRCS += stm32_gpio.c
+endif
+
 include $(TOPDIR)/boards/Board.mk

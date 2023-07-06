@@ -548,12 +548,19 @@
 #define NUM_BUTTONS        1
 #define BUTTON_USER_BIT    (1 << BUTTON_USER)
 
+#define BOARD_NGPIOIN     1 /* Amount of GPIO Input pins */
+#define BOARD_NGPIOOUT    1 /* Amount of GPIO Output pins */
+#define BOARD_NGPIOINT    0 /* Amount of GPIO Output pins */
+#define GPIO_IN1          (GPIO_INPUT | GPIO_FLOAT | GPIO_PORTF | GPIO_PIN13)
+#define GPIO_OUT1         (GPIO_OUTPUT | GPIO_OUTPUT | GPIO_SPEED_50MHz | \
+                           GPIO_OUTPUT_SET | GPIO_PORTE | GPIO_PIN9)   
+
 /* Alternate function pin selections ****************************************/
 
 #define GPIO_USART2_TX     GPIO_USART2_TX_2
 #define GPIO_USART2_RX     GPIO_USART2_RX_2
-#define GPIO_USART3_TX     GPIO_USART3_TX_2
-#define GPIO_USART3_RX     GPIO_USART3_RX_2
+#define GPIO_USART3_TX     GPIO_USART3_TX_4
+#define GPIO_USART3_RX     GPIO_USART3_RX_4
 
 #if defined(CONFIG_NUCLEO_CONSOLE_ARDUINO)
 /* USART6:
@@ -590,6 +597,9 @@
 #define ADC1_DMA_CHAN DMACHAN_ADC1_1
 #define ADC2_DMA_CHAN DMACHAN_ADC2_2
 #define ADC3_DMA_CHAN DMACHAN_ADC3_2
+
+#define GPIO_ADC1_IN3 GPIO_ADC1_IN3_0
+#define GPIO_ADC2_IN6 GPIO_ADC2_IN6_0
 
 /* SPI
  *

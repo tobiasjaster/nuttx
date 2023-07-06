@@ -99,13 +99,13 @@ static const uint32_t g_pinlist_adc1[ADC1_NCHANNELS] =
 #ifdef CONFIG_STM32L4_ADC2
 static const uint8_t  g_chanlist_adc2[ADC2_NCHANNELS] =
 {
-  4,
+  6,
   17,
   18
 }; /* IN4, DAC1 and DAC2 */
 static const uint32_t g_pinlist_adc2[ADC2_NCHANNELS] =
 {
-  GPIO_ADC1_IN4, 0, 0
+  GPIO_ADC2_IN6, 0, 0
 };
 #endif
 
