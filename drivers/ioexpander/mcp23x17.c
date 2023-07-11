@@ -27,6 +27,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <debug.h>
+#include <syslog.h>
 
 #include <nuttx/irq.h>
 #include <nuttx/i2c/i2c_master.h>
@@ -1016,8 +1017,12 @@ FAR struct ioexpander_dev_s *mcp23x17_initialize(
   mcp23x17_write(priv, buf, 3);
 #endif
 
-  priv->config->attach(priv->config, mcp23x17_interrupt, priv);
-  priv->config->enable(priv->config, TRUE);
+  syslog(LOG_INFO, "MCP23X17 INT Mirrored.\n");
+
+  // priv->config->attach(priv->config, mcp23x17_interrupt, priv);
+  syslog(LOG_INFO, "MCP23X17 INT attached.\n");
+  // priv->config->enable(priv->config, TRUE);
+  syslog(LOG_INFO, "MCP23X17 INT enabled.\n");
 #endif
 
   nxmutex_init(&priv->lock);

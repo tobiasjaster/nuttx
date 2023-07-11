@@ -60,7 +60,11 @@ CSRCS += stm32_usb.c
 endif
 
 ifeq ($(CONFIG_DEV_GPIO),y)
-CSRCS += stm32_gpio.c
+  ifeq ($(CONFIG_GPIO_LOWER_HALF),y)
+  CSRCS += stm32_ioexpander.c
+  else
+  CSRCS += stm32_gpio.c
+  endif
 endif
 
 include $(TOPDIR)/boards/Board.mk

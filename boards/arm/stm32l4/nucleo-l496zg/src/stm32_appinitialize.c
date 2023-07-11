@@ -96,6 +96,41 @@ int board_app_initialize(uintptr_t arg)
     }
 #endif
 
+  syslog(LOG_INFO, "procfd initialized.\n");
+#if defined(CONFIG_I2C)
+  /* Configure I2C */
+
+  /* REVISIT: this is ugly! */
+
+#if defined(CONFIG_STM32L4_I2C1)
+  i2c1 = stm32l4_i2cbus_initialize(1);
+#endif
+#if defined(CONFIG_STM32L4_I2C2)
+  i2c2 = stm32l4_i2cbus_initialize(2);
+#endif
+#if defined(CONFIG_STM32L4_I2C3)
+  i2c3 = stm32l4_i2cbus_initialize(3);
+#endif
+#if defined(CONFIG_STM32L4_I2C4)
+  i2c4 = stm32l4_i2cbus_initialize(4);
+#endif
+#ifdef CONFIG_I2C_DRIVER
+#if defined(CONFIG_STM32L4_I2C1)
+  i2c_register(i2c1, 1);
+#endif
+#if defined(CONFIG_STM32L4_I2C2)
+  i2c_register(i2c2, 2);
+#endif
+#if defined(CONFIG_STM32L4_I2C3)
+  i2c_register(i2c3, 3);
+#endif
+#if defined(CONFIG_STM32L4_I2C4)
+  i2c_register(i2c4, 4);
+#endif
+#endif
+#endif /* CONFIG_I2C */
+  syslog(LOG_INFO, "i2c initialized.\n");
+
 #ifdef CONFIG_DEV_GPIO
   ret = stm32l4_gpio_initialize();
   if (ret < 0)
@@ -104,6 +139,7 @@ int board_app_initialize(uintptr_t arg)
       return ret;
     }
 #endif
+  syslog(LOG_INFO, "gpio initialized.\n");
 
 #if !defined(CONFIG_ARCH_LEDS) && defined(CONFIG_USERLED_LOWER)
   /* Register the LED driver */
@@ -177,39 +213,6 @@ int board_app_initialize(uintptr_t arg)
       return ret;
     }
 #endif
-
-#if defined(CONFIG_I2C)
-  /* Configure I2C */
-
-  /* REVISIT: this is ugly! */
-
-#if defined(CONFIG_STM32L4_I2C1)
-  i2c1 = stm32l4_i2cbus_initialize(1);
-#endif
-#if defined(CONFIG_STM32L4_I2C2)
-  i2c2 = stm32l4_i2cbus_initialize(2);
-#endif
-#if defined(CONFIG_STM32L4_I2C3)
-  i2c3 = stm32l4_i2cbus_initialize(3);
-#endif
-#if defined(CONFIG_STM32L4_I2C4)
-  i2c4 = stm32l4_i2cbus_initialize(4);
-#endif
-#ifdef CONFIG_I2C_DRIVER
-#if defined(CONFIG_STM32L4_I2C1)
-  i2c_register(i2c1, 1);
-#endif
-#if defined(CONFIG_STM32L4_I2C2)
-  i2c_register(i2c2, 2);
-#endif
-#if defined(CONFIG_STM32L4_I2C3)
-  i2c_register(i2c3, 3);
-#endif
-#if defined(CONFIG_STM32L4_I2C4)
-  i2c_register(i2c4, 4);
-#endif
-#endif
-#endif /* CONFIG_I2C */
 
   UNUSED(ret);
   return OK;
