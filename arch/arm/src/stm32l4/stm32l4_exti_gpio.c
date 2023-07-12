@@ -227,42 +227,14 @@ static int stm32l4_exti1510_isr(int irq, void *context, void *arg)
  * Public Functions
  ****************************************************************************/
 
-/****************************************************************************
- * Name: stm32l4_gpiosetevent
- *
- * Description:
- *   Sets/clears GPIO based event and interrupt triggers.
- *
- * Description:
- *   Sets/clears GPIO based event and interrupt triggers.
- *
- * Input Parameters:
- *  pinset      - GPIO pin configuration
- *  risingedge  - Enables interrupt on rising edges
- *  fallingedge - Enables interrupt on falling edges
- *  event       - Generate event when set
- *  func        - When non-NULL, generate interrupt
- *  arg         - Argument passed to the interrupt callback
- *
- * Returned Value:
- *  Zero (OK) is returned on success, otherwise a negated errno value is
- *  returned to indicate the nature of the failure.
- *
- ****************************************************************************/
-
-int stm32l4_gpiosetevent(uint32_t pinset, bool risingedge, bool fallingedge,
-                         bool event, xcpt_t func, void *arg)
+int stm32l4_exti_gpio_set_irq(uint32_t pin, bool activate)
 {
   struct gpio_callback_s *shared_cbs;
-  uint32_t pin = pinset & GPIO_PIN_MASK;
   uint32_t exti = STM32L4_EXTI1_BIT(pin);
   int      irq;
   xcpt_t   handler;
   int      nshared;
-  int      i;
-
-  /* Select the interrupt handler for this EXTI pin */
-
+  
   if (pin < 5)
     {
       irq        = pin + STM32L4_IRQ_EXTI0;
@@ -306,14 +278,9 @@ int stm32l4_gpiosetevent(uint32_t pinset, bool risingedge, bool fallingedge,
       nshared    = 6;
     }
 
-  /* Get the previous GPIO IRQ handler; Save the new IRQ handler. */
-
-  g_gpio_handlers[pin].callback = func;
-  g_gpio_handlers[pin].arg      = arg;
-
   /* Install external interrupt handlers */
 
-  if (func)
+  if (activate)
     {
       irq_attach(irq, handler, NULL);
       up_enable_irq(irq);
@@ -337,6 +304,43 @@ int stm32l4_gpiosetevent(uint32_t pinset, bool risingedge, bool fallingedge,
           up_disable_irq(irq);
         }
     }
+}
+/****************************************************************************
+ * Name: stm32l4_gpiosetevent
+ *
+ * Description:
+ *   Sets/clears GPIO based event and interrupt triggers.
+ *
+ * Description:
+ *   Sets/clears GPIO based event and interrupt triggers.
+ *
+ * Input Parameters:
+ *  pinset      - GPIO pin configuration
+ *  risingedge  - Enables interrupt on rising edges
+ *  fallingedge - Enables interrupt on falling edges
+ *  event       - Generate event when set
+ *  func        - When non-NULL, generate interrupt
+ *  arg         - Argument passed to the interrupt callback
+ *
+ * Returned Value:
+ *  Zero (OK) is returned on success, otherwise a negated errno value is
+ *  returned to indicate the nature of the failure.
+ *
+ ****************************************************************************/
+
+int stm32l4_gpiosetevent(uint32_t pinset, bool risingedge, bool fallingedge,
+                         bool event, xcpt_t func, void *arg)
+{
+  uint32_t pin = pinset & GPIO_PIN_MASK;
+  uint32_t exti = STM32L4_EXTI1_BIT(pin);
+
+  /* Get the previous GPIO IRQ handler; Save the new IRQ handler. */
+
+  g_gpio_handlers[pin].callback = func;
+  g_gpio_handlers[pin].arg      = arg;
+
+  /* Select the interrupt handler for this EXTI pin */
+  stm32l4_exti_gpio_set_irq(pin, func!=NULL);
 
   /* Configure GPIO, enable EXTI line enabled if event or interrupt is
    * enabled.

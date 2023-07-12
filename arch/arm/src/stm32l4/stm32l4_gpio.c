@@ -88,6 +88,116 @@ const uint32_t g_gpiobase[STM32L4_NPORTS] =
  * Public Functions
  ****************************************************************************/
 
+int stm32l4_gpio_set_pinmode(unsigned int port, unsigned int pin, unsigned int pinmode)
+{
+  uintptr_t base;
+  uint32_t regval;
+
+  base = g_gpiobase[port];
+  regval  = getreg32(base + STM32L4_GPIO_MODER_OFFSET);
+  regval &= ~GPIO_MODER_MASK(pin);
+  regval |= ((uint32_t)pinmode << GPIO_MODER_SHIFT(pin));
+  putreg32(regval, base + STM32L4_GPIO_MODER_OFFSET);
+  return OK;
+}
+
+int stm32l4_gpio_set_pupd(unsigned int port, unsigned int pin, uint32_t setting)
+{
+  uintptr_t base;
+  uint32_t regval;
+
+  base = g_gpiobase[port];
+  regval  = getreg32(base + STM32L4_GPIO_PUPDR_OFFSET);
+  regval &= ~GPIO_PUPDR_MASK(pin);
+  regval |= (setting << GPIO_PUPDR_SHIFT(pin));
+  putreg32(regval, base + STM32L4_GPIO_PUPDR_OFFSET);
+}
+
+int stm32l4_gpio_set_af(unsigned int port, unsigned int pin, uint32_t setting)
+{
+  uintptr_t base;
+  uint32_t regval;
+  unsigned int regoffset;
+  unsigned int pos;
+
+  if (pin < 8)
+    {
+      regoffset = STM32L4_GPIO_AFRL_OFFSET;
+      pos       = pin;
+    }
+  else
+    {
+      regoffset = STM32L4_GPIO_AFRH_OFFSET;
+      pos       = pin - 8;
+    }
+
+  base = g_gpiobase[port];
+  regval  = getreg32(base + regoffset);
+  regval &= ~GPIO_AFR_MASK(pos);
+  regval |= (setting << GPIO_AFR_SHIFT(pos));
+  putreg32(regval, base + regoffset);
+}
+
+int stm32l4_gpio_set_ospeed(unsigned int port, unsigned int pin, uint32_t setting)
+{
+  uintptr_t base;
+  uint32_t regval;
+
+  base = g_gpiobase[port];
+  regval  = getreg32(base + STM32L4_GPIO_OSPEED_OFFSET);
+  regval &= ~GPIO_OSPEED_MASK(pin);
+  regval |= (setting << GPIO_OSPEED_SHIFT(pin));
+  putreg32(regval, base + STM32L4_GPIO_OSPEED_OFFSET);
+}
+
+int stm32l4_gpio_set_od(unsigned int port, unsigned int pin, bool od)
+{
+  uintptr_t base;
+  uint32_t regval;
+  uint32_t setting;
+
+  base = g_gpiobase[port];
+  regval  = getreg32(base + STM32L4_GPIO_OTYPER_OFFSET);
+  setting = GPIO_OTYPER_OD(pin);
+  if (od)
+    {
+      regval |= setting;
+    }
+  else
+    {
+      regval &= ~setting;
+    }
+  putreg32(regval, base + STM32L4_GPIO_OTYPER_OFFSET);
+}
+
+int stm32l4_gpio_exti(unsigned int port, unsigned int pin, bool activate)
+{
+  /* The selection of the EXTI line source is performed through the EXTIx
+    * bits in the SYSCFG_EXTICRx registers.
+    *
+    * The range of EXTI bit values in STM32L4x6 goes to 0b1000 to support
+    * the ports up to PI in STM32L496xx devices. For STM32L4x3 the EXTI
+    * bit values end at 0b111 (for PH0, PH1 and PH3 only) and values for
+    * non-existent ports F and G are reserved.
+    */
+
+  uint32_t regaddr;
+  int shift;
+
+  /* Set the bits in the SYSCFG EXTICR register */
+
+  regaddr = STM32L4_SYSCFG_EXTICR(pin);
+  regval  = getreg32(regaddr);
+  shift   = SYSCFG_EXTICR_EXTI_SHIFT(pin);
+  regval &= ~(SYSCFG_EXTICR_PORT_MASK << shift);
+  if (activate)
+    {
+      regval |= (((uint32_t)port) << shift);
+    }
+
+  putreg32(regval, regaddr);
+}
+
 /****************************************************************************
  * Function:  stm32l4_gpioinit
  *
@@ -197,10 +307,7 @@ int stm32l4_configgpio(uint32_t cfgset)
 
   /* Now apply the configuration to the mode register */
 
-  regval  = getreg32(base + STM32L4_GPIO_MODER_OFFSET);
-  regval &= ~GPIO_MODER_MASK(pin);
-  regval |= ((uint32_t)pinmode << GPIO_MODER_SHIFT(pin));
-  putreg32(regval, base + STM32L4_GPIO_MODER_OFFSET);
+  stm32l4_gpio_set_pinmode(port, pin, pinmode);
 
   /* Set up the pull-up/pull-down configuration (all but analog pins) */
 
@@ -223,10 +330,7 @@ int stm32l4_configgpio(uint32_t cfgset)
         }
     }
 
-  regval  = getreg32(base + STM32L4_GPIO_PUPDR_OFFSET);
-  regval &= ~GPIO_PUPDR_MASK(pin);
-  regval |= (setting << GPIO_PUPDR_SHIFT(pin));
-  putreg32(regval, base + STM32L4_GPIO_PUPDR_OFFSET);
+  stm32l4_gpio_set_pupd(port, pin, setting);
 
   /* Set the alternate function (Only alternate function pins) */
 
@@ -239,24 +343,11 @@ int stm32l4_configgpio(uint32_t cfgset)
       setting = 0;
     }
 
-  if (pin < 8)
-    {
-      regoffset = STM32L4_GPIO_AFRL_OFFSET;
-      pos       = pin;
-    }
-  else
-    {
-      regoffset = STM32L4_GPIO_AFRH_OFFSET;
-      pos       = pin - 8;
-    }
-
-  regval  = getreg32(base + regoffset);
-  regval &= ~GPIO_AFR_MASK(pos);
-  regval |= (setting << GPIO_AFR_SHIFT(pos));
-  putreg32(regval, base + regoffset);
+  stm32l4_gpio_set_af(port, pin, setting);
 
   /* Set speed (Only outputs and alternate function pins) */
 
+  setting = 0;
   if (pinmode == GPIO_MODER_OUTPUT || pinmode == GPIO_MODER_ALT)
     {
       switch (cfgset & GPIO_SPEED_MASK)
@@ -279,32 +370,15 @@ int stm32l4_configgpio(uint32_t cfgset)
             break;
         }
     }
-  else
-    {
-      setting = 0;
-    }
 
-  regval  = getreg32(base + STM32L4_GPIO_OSPEED_OFFSET);
-  regval &= ~GPIO_OSPEED_MASK(pin);
-  regval |= (setting << GPIO_OSPEED_SHIFT(pin));
-  putreg32(regval, base + STM32L4_GPIO_OSPEED_OFFSET);
+  stm32l4_gpio_set_ospeed(port, pin, setting);
 
   /* Set push-pull/open-drain (Only outputs and alternate function pins) */
 
-  regval  = getreg32(base + STM32L4_GPIO_OTYPER_OFFSET);
-  setting = GPIO_OTYPER_OD(pin);
+  bool od = ((pinmode == GPIO_MODER_OUTPUT || pinmode == GPIO_MODER_ALT) &&
+      (cfgset & GPIO_OPENDRAIN) != 0);
 
-  if ((pinmode == GPIO_MODER_OUTPUT || pinmode == GPIO_MODER_ALT) &&
-      (cfgset & GPIO_OPENDRAIN) != 0)
-    {
-      regval |= setting;
-    }
-  else
-    {
-      regval &= ~setting;
-    }
-
-  putreg32(regval, base + STM32L4_GPIO_OTYPER_OFFSET);
+  stm32l4_gpio_set_od(port, pin, od);
 
   /* Otherwise, it is an input pin.  Should it configured as an
    * EXTI interrupt?
@@ -312,27 +386,11 @@ int stm32l4_configgpio(uint32_t cfgset)
 
   if (pinmode != GPIO_MODER_OUTPUT && (cfgset & GPIO_EXTI) != 0)
     {
-      /* The selection of the EXTI line source is performed through the EXTIx
-       * bits in the SYSCFG_EXTICRx registers.
-       *
-       * The range of EXTI bit values in STM32L4x6 goes to 0b1000 to support
-       * the ports up to PI in STM32L496xx devices. For STM32L4x3 the EXTI
-       * bit values end at 0b111 (for PH0, PH1 and PH3 only) and values for
-       * non-existent ports F and G are reserved.
-       */
-
-      uint32_t regaddr;
-      int shift;
-
-      /* Set the bits in the SYSCFG EXTICR register */
-
-      regaddr = STM32L4_SYSCFG_EXTICR(pin);
-      regval  = getreg32(regaddr);
-      shift   = SYSCFG_EXTICR_EXTI_SHIFT(pin);
-      regval &= ~(SYSCFG_EXTICR_PORT_MASK << shift);
-      regval |= (((uint32_t)port) << shift);
-
-      putreg32(regval, regaddr);
+      stm32l4_gpio_exti(port, pin, true);
+    }
+  else
+    {
+      stm32l4_gpio_exti(port, pin, false);
     }
 
   /* On STM32L47x/STM32L48x parts, the ACSR register also needs to be set
